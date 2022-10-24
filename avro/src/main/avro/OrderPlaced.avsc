@@ -1,0 +1,42 @@
+{
+  "type": "record",
+  "namespace": "com.example.order.kafka",
+  "name": "OrderPlaced",
+  "version": "1",
+  "fields": [
+    {
+      "name": "orderId",
+      "type": "string"
+    },
+    {
+      "name": "orderType",
+      "type": {
+        "type": "enum",
+        "name": "OrderType",
+        "symbols": [
+          "MARKET",
+          "LIMIT"
+        ]
+      }
+    },
+    {
+      "name": "symbol",
+      "type": "string"
+    },
+    {
+      "name": "quantity",
+      "type": "long"
+    },
+    {
+      "name": "side",
+      "type": {
+        "type": "enum",
+        "name": "Side",
+        "symbols": [
+          "BUY",
+          "SELL"
+        ]
+      }
+    }
+  ]
+}

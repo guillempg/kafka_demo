@@ -1,0 +1,58 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '2.7.3'
+    id 'com.google.cloud.tools.jib' version '3.3.0'
+    id "com.github.davidmc24.gradle.plugin.avro" version "1.2.1"
+}
+
+jib {
+    from {
+        image = 'azul/zulu-openjdk:11-jre'
+    }
+    to {
+        image = 'billing-app-container'
+    }
+}
+
+group 'com.example'
+version '0.1.0'
+
+repositories {
+    mavenCentral()
+    maven {
+        url "https://packages.confluent.io/maven/"
+    }
+}
+
+dependencies {
+    // KAFKA
+    implementation 'org.springframework.kafka:spring-kafka:2.9.0'
+    implementation 'io.confluent:kafka-avro-serializer:6.2.0'
+    implementation 'org.apache.avro:avro:1.10.2'
+    implementation 'org.apache.kafka:kafka-clients:6.2.0-ccs'
+    testImplementation 'org.springframework.kafka:spring-kafka-test'
+
+    implementation(project(':avro')) {
+        transitive = false
+    }
+
+    implementation 'org.springframework.boot:spring-boot-autoconfigure:2.7.3'
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-actuator', version: '2.7.4'
+    implementation 'org.projectlombok:lombok:1.18.22'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Main-Class': 'com.example.billing.BillingApplication'
+    }
+    baseName = 'BillingApp'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+
+test {
+    useJUnitPlatform()
+}

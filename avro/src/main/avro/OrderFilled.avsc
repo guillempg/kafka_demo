@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "namespace": "com.example.order.kafka",
+  "name": "OrderFilled",
+  "version": "1",
+  "fields": [
+    {
+      "name": "orderId",
+      "type": "string"
+    },
+    {
+      "name": "filledQuantity",
+      "type": "long"
+    },
+    {
+      "name": "counterparty",
+      "type": "string"
+    }
+  ]
+}

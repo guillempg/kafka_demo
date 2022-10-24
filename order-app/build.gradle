@@ -1,0 +1,119 @@
+plugins {
+    id 'org.springframework.boot' version '2.7.3'
+    id "org.springdoc.openapi-gradle-plugin" version "1.4.0"
+    id 'io.spring.dependency-management' version '1.0.13.RELEASE'
+    id 'java'
+    id 'com.google.cloud.tools.jib' version '3.3.0'
+    id "com.github.davidmc24.gradle.plugin.avro" version "1.2.1"
+}
+
+jib {
+    from {
+        image = 'azul/zulu-openjdk:11-jre'
+    }
+    to {
+        image = 'order-app-container'
+    }
+}
+
+bootBuildImage {
+    imageName = "example/order-app-box"
+    publish = false
+}
+
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+def cucumberVersion = "6.11.0"
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url "https://packages.confluent.io/maven/"
+    }
+}
+
+ext {
+    set('testcontainersVersion', "1.17.3")
+}
+
+task cucumber() {
+    dependsOn assemble, testClasses
+    doLast {
+        javaexec {
+            main = "io.cucumber.core.cli.Main"
+            jvmArgs = ['-Dspring.profiles.active=cucumber']
+            classpath = configurations.cucumberRuntime + sourceSets.main.output + sourceSets.test.output
+            args = ['--plugin', 'pretty',
+                    '--plugin', 'json:build/reports/CucumberReports/cucumber.json',
+                    '--glue', 'com.example.springwebfluxmqkafka',
+                    '--tags', System.getProperty('cucumber.tags', 'not @WorkInProgress'),
+                    'src/test/resources/features']
+        }
+    }
+}
+
+
+dependencies {
+    implementation group: 'commons-codec', name: 'commons-codec', version: '1.15' // murmur 2 hash for Kafka partitions
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springdoc:springdoc-openapi-webflux-ui:1.6.4'
+    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+    implementation "org.postgresql:postgresql"
+
+    // KAFKA
+    implementation 'org.springframework.kafka:spring-kafka'
+    implementation 'io.confluent:kafka-avro-serializer:6.2.0'
+    implementation 'org.apache.avro:avro:1.10.2'
+    implementation 'org.apache.kafka:kafka-clients:6.2.0-ccs'
+    testImplementation 'org.springframework.kafka:spring-kafka-test'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    implementation(project(':avro')) {
+        transitive = false
+    }
+
+    testImplementation("io.cucumber:cucumber-junit-platform-engine:$cucumberVersion")
+    testImplementation("io.cucumber:cucumber-java:$cucumberVersion")
+    testImplementation("io.cucumber:cucumber-spring:$cucumberVersion")
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webflux'
+    testImplementation 'io.projectreactor:reactor-test'
+
+    testImplementation "org.testcontainers:testcontainers:1.17.3"
+    testImplementation 'org.testcontainers:junit-jupiter:1.17.3'
+    testImplementation 'org.testcontainers:kafka:1.17.3'
+    testImplementation "org.testcontainers:postgresql:1.17.3"
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+    testRuntimeOnly('com.h2database:h2')
+}
+
+configurations {
+    cucumberRuntime {
+        extendsFrom testImplementation, runtimeOnly
+    }
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.testcontainers:testcontainers-bom:${testcontainersVersion}"
+    }
+}
+
+test {
+    useJUnitPlatform()
+}

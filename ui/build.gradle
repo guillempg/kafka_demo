@@ -1,0 +1,131 @@
+import com.google.cloud.tools.jib.gradle.JibTask
+
+plugins {
+    id 'idea'
+    id 'java'
+    id 'com.github.node-gradle.node'
+    id 'com.google.cloud.tools.jib' version '3.3.0'
+}
+
+idea.module {
+    excludeDirs = [
+            file("${projectDir}/node_modules"),
+            file("${projectDir}/build"),
+    ]
+}
+
+sourceCompatibility = 17
+targetCompatibility = 17
+
+// There is no JAR
+jar {
+    enabled = false
+}
+
+node {
+    download = rootProject.hasProperty('nodeDownload') ? rootProject.nodeDownload.toBoolean() : true
+
+    version = '14.18.2'
+    yarnVersion = '1.22.10'
+}
+
+def defaultExcludes = [
+        '**/build/',
+        '**/dist/',
+        '**/node_modules/'
+]
+
+yarn_install {
+    args = ['--ci', '--frozen-lockfile']
+
+    inputs.files(fileTree(projectDir, {
+        includes = ['**/package.json', '**/yarn.lock']
+        excludes = defaultExcludes
+    }))
+
+    // Single file: outputs are checked by deps (lint & build) to determine if they need to run
+    outputs.file('node_modules/.yarn-integrity')
+    // no sense caching (hashing and archiving all of node_modules/ takes longer than just installing)
+    // but we can skip the task if inputs don't change
+}
+
+tasks.register('lintCheckUI', YarnTask, {
+    dependsOn 'yarn_install', 'generateUiServices'
+    inputs.files(fileTree(
+            dir: 'src',
+            includes: [ '**/*.ts', '**/*.tsx' ],
+            excludes: defaultExcludes
+    )).withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.files file("${buildDir}/reports/${name}.out") // never actually generated
+
+    args = ['lint']
+})
+
+tasks.register('buildUI', YarnTask, {
+    dependsOn 'yarn_install', 'lintCheckUI', 'generateUiServices'
+    inputs.files(fileTree(
+            dir: 'src',
+            excludes: defaultExcludes
+    )).withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.dirs(file('src').list().collect { "src/$it/build" })
+
+    args = ['run', 'build']
+})
+
+tasks.register('testUnit', YarnTask, {
+    dependsOn 'yarn_install'
+    inputs.files(fileTree(
+            dir: 'src',
+            excludes: defaultExcludes
+    )).withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.files(fileTree(
+            dir: 'src',
+            includes: [
+                    '*/junit.xml'
+            ]
+    ))
+
+    args = ['run', 'test']
+})
+
+/**
+ * Generates an BOM for the ui module
+ */
+tasks.register('cyclonedxBom', YarnTask, {
+    inputs.files(fileTree(
+            dir: projectDir.toURI(),
+            includes: [
+                    '**/package.json',
+                    '**/package-lock.json'
+            ],
+            excludes: defaultExcludes
+    )).withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.files(fileTree(
+            dir: projectDir.toURI(),
+            includes: [
+                    'bom.json',
+                    'bom.xml',
+                    'packages/**/bom.json',
+                    'packages/**/bom.xml'
+            ],
+            excludes: ['**/node_modules/']
+    ))
+
+    args = ['run', 'sbom']
+})
+
+tasks.register('startUI', YarnTask, {
+    dependsOn 'buildUI'
+    args = ['run', 'start-ui']
+})
+
+tasks.named('clean').configure {
+    // remove all task outputs
+
+    dependsOn(['buildUI', 'testUnit', 'lintCheckUI', 'cyclonedxBom']
+            .collect { "clean${it.capitalize()}" })
+
+    outputs.upToDateWhen { false }
+}
+
+tasks.withType(JibTask) { dependsOn 'buildUI' }

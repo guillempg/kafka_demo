@@ -1,0 +1,32 @@
+In order to have a docker container with billing-app available for the cucumber tests defined in order-app,
+follow these instructions to have a local Docker registry (https://docs.docker.com/registry/) to which the
+billing-app image can be pushed (alternatively, it could be pushed to DockerHub and made public, but I prefer not to):
+
+1- Run the docker image that has the Docker registry:
+
+docker run -d -p 5000:5000 --name registry registry:2
+
+
+2- Run billing-app jibDockerBuild Gradle Task to have the image built
+
+
+3- Tag the image:
+
+docker image tag billing-app-container localhost:5000/billing-app-container
+
+
+4- Push it to the docker registry running locally in your Docker container:
+
+docker push localhost:5000/billing-app-container
+
+
+5- Verify that you can pull the image from your local Docker registry, by first removing it:
+
+- Retrieve the image id
+docker images
+
+- Remove it with:
+docker rmi [IMAGE_ID]
+
+- Pull it from the local Docker registry like this:
+docker pull localhost:5000/billing-app-container

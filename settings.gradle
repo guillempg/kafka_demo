@@ -1,0 +1,21 @@
+pluginManagement {
+    plugins {
+        // Also see `buildSrc/settings.gradle` affecting buildSrc and root project
+        id 'com.github.node-gradle.node' version "${pluginVersionNodeGradle}"
+    }
+}
+
+buildCache {
+    local {
+        directory = new File(rootDir, '.cache')
+        removeUnusedEntriesAfterDays = 10
+    }
+}
+
+rootProject.name = 'kafka-demo'
+
+include 'order-app'
+include 'billing-app'
+include 'ui'
+include 'avro'
+

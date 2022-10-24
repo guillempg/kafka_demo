@@ -1,0 +1,28 @@
+# Ignore Gradle project-specific cache directory
+.cache/
+.gradle/
+.gitignore
+order-app/build/generated-main-avro-java/
+# Ignore tooling dirs
+.direnv/
+
+# Ignore Gradle build output directory
+build
+out/
+order-app/target
+
+# Ignore Project Files
+.idea/
+.vscode/
+
+# Do not ignore these files
+!.idea/externalDependencies.xml
+
+# Ignored test generated files
+**/.jqwik-database
+
+# Test reports
+/test/**/*.log
+
+# UI
+ui/node_modules/**

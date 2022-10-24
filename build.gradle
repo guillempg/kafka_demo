@@ -1,0 +1,66 @@
+buildscript {
+    repositories {
+        mavenLocal()
+    }
+}
+
+
+plugins {
+    id 'base'
+    id 'idea'
+    id 'java'
+    id "com.dorongold.task-tree" version "2.1.0"
+}
+
+idea {
+    module {
+        excludeDirs += file('.cache')
+        excludeDirs += file('.direnv')
+    }
+}
+
+allprojects {
+    group = 'com.example'
+    version = '0.1.0'
+
+    repositories {
+        mavenLocal()
+
+        mavenCentral()
+
+        maven {
+            url 'https://packages.confluent.io/maven/'
+            content {
+                includeGroup 'io.confluent'
+                includeGroup 'org.apache.kafka'
+            }
+        }
+
+        maven {
+            url 'https://jitpack.io'
+            content {
+                includeGroup 'com.github.everit-org.json-schema'
+            }
+        }
+
+    }
+}
+
+defaultTasks 'build'
+
+def dependOnContainerBuild = { task, subProject ->
+    def buildTask = subProject.tasks.findByName('jibDockerBuild')
+    if (!buildTask) {
+        // catches stubs, etc which build from Dockerfile
+        buildTask = subProject.tasks.findByName('dockerBuild')
+    }
+    if (buildTask) {
+        task.dependsOn(buildTask)
+    }
+}
+
+
+tasks.register('buildContainers', Task.class, { task ->
+    rootProject.subprojects dependOnContainerBuild.curry(task)
+})
+

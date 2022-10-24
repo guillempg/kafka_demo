@@ -1,0 +1,39 @@
+spring:
+  datasource:
+    driverClassName: org.postgresql.Driver
+    url: "jdbc:postgresql://localhost:5432/db"
+    username: user
+    password: secret
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+    show-sql: false
+    hibernate:
+      ddl-auto: create
+      use-new-id-generator-mappings: false
+    open-in-view: false
+    generate-ddl: true
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: "OrderGroup"
+      key-deserializer: "org.apache.kafka.common.serialization.LongDeserializer"
+      value-deserializer: "io.confluent.kafka.serializers.KafkaAvroDeserializer"
+    client-id: "OrderApp"
+    producer:
+      acks: "all"
+      key-serializer: "org.apache.kafka.common.serialization.LongSerializer"
+      value-serializer: "io.confluent.kafka.serializers.KafkaAvroSerializer"
+    properties: # for KafkaAvroDeserializer
+      # this value isn’t used but is still required
+      schema.registry.url: http://mock:8081
+      specific.avro.reader: true
+
+order-app.kafka.topics-produced:
+  - "OrderPlaced"
+  - "PlaceOrderRejected"
+order-app.kafka.topics-consumed:
+  - "OrderSubmitted"
+  - "OrderFilled"

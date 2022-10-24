@@ -1,0 +1,16 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+div {
+  display: flex;
+  column-gap: 10em;
+}
+
+p {
+  width: 200px;
+  text-align: center;
+  word-wrap: break-word;
+}

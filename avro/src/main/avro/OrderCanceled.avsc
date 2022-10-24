@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "namespace": "com.example.order.kafka",
+  "name": "OrderCanceled",
+  "version": "1",
+  "fields": [
+    {
+      "name": "orderId",
+      "type": "string"
+    },
+    {
+      "name": "user",
+      "type": "string"
+    }
+  ]
+}
